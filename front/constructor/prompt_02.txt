@@ -1,0 +1,1 @@
+Please tell me precisely what and how to fix to be able to easily enter data into fields. Currently, why key press accepts 1 symbol, removes focus from text block and refreshes the page (scrolling it to the top).

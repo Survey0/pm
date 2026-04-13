@@ -1,0 +1,2 @@
+Let's modify one core assumption there.
+Namely - user creates, publishes surveys and can share them via a link. So here "user" has the idea ow "owner". Actual users are anonymous, they just click through a survey, selecting options or entering text, then finish. So an answer is not linked to a user that has created the corresponding survey.

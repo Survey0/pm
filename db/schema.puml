@@ -1,0 +1,85 @@
+@startuml
+!define table(x) class x << (T,#FFAAAA) >>
+!define primary_key(x) <b><color:darkred>x</color></b>
+!define foreign_key(x) <color:darkgreen>x</color>
+
+skinparam linetype ortho
+
+table(users) {
+    * primary_key(id) : BIGINT
+    --
+    login : VARCHAR(100)
+    email : VARCHAR(255)
+    salt : VARCHAR(64)
+    password_hash : VARCHAR(255)
+    created_at : TIMESTAMP
+}
+
+table(surveys) {
+    * primary_key(id) : BIGINT
+    --
+    foreign_key(user_id) : BIGINT
+    name : VARCHAR(255)
+    description : TEXT
+    created_at : DATE
+    is_published : BOOLEAN
+}
+
+table(questions) {
+    * primary_key(id) : BIGINT
+    --
+    foreign_key(survey_id) : BIGINT
+    position : INT
+    question_text : TEXT
+    type : VARCHAR(20)
+    is_required : BOOLEAN
+}
+
+table(options) {
+    * primary_key(id) : BIGINT
+    --
+    foreign_key(question_id) : BIGINT
+    position : INT
+    option_text : VARCHAR(500)
+}
+
+table(responses) {
+    * primary_key(id) : BIGINT
+    --
+    foreign_key(survey_id) : BIGINT
+    respondent_session_id : VARCHAR(64)
+    started_at : TIMESTAMP
+    completed_at : TIMESTAMP
+    is_completed : BOOLEAN
+}
+
+table(answers) {
+    * primary_key(id) : BIGINT
+    --
+    foreign_key(response_id) : BIGINT
+    foreign_key(question_id) : BIGINT
+    foreign_key(option_id) : BIGINT (NULL)
+    answer_text : TEXT (NULL)
+    answered_at : TIMESTAMP
+}
+
+' Relationships
+users ||--o{ surveys : "owns"
+surveys ||--o{ questions : "contains"
+questions ||--o{ options : "has"
+surveys ||--o{ responses : "receives"
+responses ||--o{ answers : "contains"
+questions ||--o{ answers : "is_answered_by"
+options ||--o{ answers : "selected_in"
+
+note top of responses
+  Anonymous respondent session
+  One session = one survey completion
+end note
+
+note top of answers
+  Each answer links to a response session
+  and a specific question
+end note
+
+@enduml

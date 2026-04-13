@@ -1,0 +1,11 @@
+Please write SQL to create DB schema with the following entities and relationships. Assume MySQL.
+
+(1) users (id, login, email, salt, password_hash)
+(2) surveys (id, name, description, created_at (date))
+(3) questions (id, survey_id, position (int), text, type (varchar(20)), required (bool))
+(4) options (id, question_id, position (int), text)
+(4) answers (id, option_id)
+
+Assume each id field is auto-increment big integer. Feel free to rename fields if suggested names are keywords for selected DB type. Some fields above contain types in parenthesis. Assume 'text' field is unlimited-size text.
+
+Draw an ER-diagram with crow-foot notation, if you can, prefereably for plantuml (in text format), if that's possible at all. If not - image.

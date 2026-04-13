@@ -1,0 +1,80 @@
+// This is sent to save_survey.php
+{
+	"userId": 12345,
+	"name": "My awesome survey",
+	"description": "This is my first survey designed in Figma",
+	"questions": [
+		{
+			"order": 1,
+			"text": "Do you like surveys?",
+			"type": "SINGLE_CHOICE",
+			"required": true,
+			"options": [
+				{
+					"order": 1,
+					"text": "Yes"
+				},
+				{
+					"order": 2,
+					"text": "No"
+				},
+				{
+					"order": 3,
+					"text": "Not sure"
+				}
+			]
+		},
+		{
+			"order": 2,
+			"text": "What do you like about new office?",
+			"type": "MULTIPLE_CHOICE",
+			"required": true,
+			"options": [
+				{
+					"order": 1,
+					"text": "Water cooler"
+				},
+				{
+					"order": 2,
+					"text": "Coffee machine"
+				},
+				{
+					"order": 3,
+					"text": "Bed"
+				},
+				{
+					"order": 4,
+					"text": "Vending machines"
+				}
+			]
+		},
+		{
+			"order": 3,
+			"text": "Please provide any information in free form",
+			"type": "TEXT",
+			"required": false
+		}
+	]
+}
+
+// This is returned for get_surveys.php - an array of existing surveys from db for current user (windows.currentUserId)
+[{
+	"id": 123,
+	"name": "My awesome survey",
+	"description": "This is my first survey designed in Figma",
+	"numberOfQuestions": 3,
+	"createdAt": "2026-04-06"
+}]
+
+// For register API
+{
+  "username": "joe",
+  "email": "joe.rogan@gmail.com",
+  "password": "12345"
+}
+
+// For login API
+{
+  "login": "joe",
+  "password": "12345"
+}

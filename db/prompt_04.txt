@@ -1,0 +1,2 @@
+Just one question. What value does including question_id into answers table have?
+Did you mean we don't have actual TEXT option there so for such questions there will be only question_id filled and option_id is null?

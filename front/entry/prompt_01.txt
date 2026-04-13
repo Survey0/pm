@@ -1,0 +1,31 @@
+Now, let's create a login/register design.
+
+Everything happens in the same file - index.html. Separate JS code to js/entry.js.
+Please use the same styles, assume they are in css/styles.css file. Try not to add any new styles there, if possible.
+Login mode:
+[login] editbox (either user name or email, "user name or email" - a hint)
+[password]
+"Login" button, "Register" button.
+On "Register" click the interface changes to registration mode.
+On "Login" click, API call:
+POST /api/login.php
+Body: { login, password }
+Returns: user_id (int). This needs to be stored somewhere for the duration of session.
+
+Registration mode:
+[user name] editbox, hint "user name", mandatory (add an asterisk to the right)
+[email] editbox, hint "email", mandatory (add an asterisk to the right)
+[password]
+[repeat password]
+"Register" button, "Cancel" button.
+
+On cancel button click interface changes to the previous (to login mode). 
+On register button click:
+1. Basic validation: email is "nonspace@nonspace", passwords match. If validation fails, focus goes to the first invalid element and an erroe message is shown somewhere above it. When user starts typing new info, error message is cleared.
+2. (if validation OK) API call:
+POST /api/register.php
+Body: { username, email, password }
+Returns: user_id (int). This needs to be stored somewhere for the duration of session.
+
+If we logged in (either after successful login or successful registration), file "constructor.html" is loaded (current directory).
+Please explain afterwards, where can I get that user_id in constructor.html-referenced JS code.
