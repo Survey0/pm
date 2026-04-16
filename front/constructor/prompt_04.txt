@@ -1,2 +1,0 @@
-Consider this file I uploaded. It contains JS code (between <script> tags), some core HTML and a style block. I believe, we can extract style info into a separate file and reference it from the rest of HTML code, both to separate concerns and to unify the design.
-Please show me how to do it. No need to bother with script block, feel free to just hint where it goes, to reduce output.

@@ -1,5 +1,0 @@
-Can you please add an exit button (logoff) at the upper right corner of the interface implemented by the attached files?
-Just a standard pictogram of logoff/exit, looks like a door.
-On click - clear currently authorized user id (from local storage and global vars) and display index.html.
-
-Please write code as an addon to existing files, don't rewrite the whole files.
