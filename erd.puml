@@ -53,11 +53,11 @@ entity answers {
   createdAt : timestamp
 }
 
-users ||--o{ surveys : "создаёт"
-surveys ||--o{ questions : "содержит"
-questions ||--o{ options : "имеет"
-questions ||--o{ answers : "получает"
-options ||--o{ answers : "выбран в"
-users ||--o{ answers : "владеет"
+users ||--o{ surveys : "СѓРїСЂР°РІР»СЏСЋС‚"
+surveys ||--o{ questions : "СЃРѕРґРµСЂР¶Р°С‚"
+questions ||--o{ options : "СЃРѕСЃС‚РѕСЏС‚ РёР·"
+questions ||--o{ answers : "СЃСЃС‹Р»Р°СЋС‚СЃСЏ"
+options ||--o{ answers : "РІС‹Р±СЂР°РЅС‹ РІ"
+users ||--o{ answers : "РІРёРґСЏС‚"
 
 @enduml
