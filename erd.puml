@@ -1,0 +1,63 @@
+@startuml
+
+!theme plain
+
+entity users {
+  * userID : int <<PK>>
+  --
+  name : varchar(100)
+  email : varchar(255)
+  passwordHash : varchar(255)
+  createdAt : timestamp
+  isAdmin : boolean
+}
+
+entity surveys {
+  * surveyID : int <<PK>>
+  --
+  userID : int <<FK>>
+  title : varchar(255)
+  description : text
+  status : varchar(50)
+  publishedAt : timestamp
+  openedAt : timestamp
+  closedAt : timestamp
+}
+
+entity questions {
+  * questionID : int <<PK>>
+  --
+  surveyID : int <<FK>>
+  content : text
+  type : varchar(20)
+  isRequired : boolean
+  orderPriority : int
+}
+
+entity options {
+  * optionID : int <<PK>>
+  --
+  questionID : int <<FK>>
+  text : text
+  orderPriority : int
+}
+
+entity answers {
+  * answerID : int <<PK>>
+  --
+  sessionID : uuid
+  questionID : int <<FK>>
+  optionID : int <<FK>>
+  textAnswer : text
+  userID : int <<FK>>
+  createdAt : timestamp
+}
+
+users ||--o{ surveys : "создаёт"
+surveys ||--o{ questions : "содержит"
+questions ||--o{ options : "имеет"
+questions ||--o{ answers : "получает"
+options ||--o{ answers : "выбран в"
+users ||--o{ answers : "владеет"
+
+@enduml
