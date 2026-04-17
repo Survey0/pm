@@ -1,0 +1,1019 @@
+openapi: 3.0.0
+info:
+  title: Survey0 API
+  description: API для платформы создания и проведения онлайн-опросов
+  version: 1.0.0
+  contact:
+    name: Survey0 Team
+
+servers:
+  - url: https://todo/api/v1
+    description: Production server
+  - url: http://localhost:8000/api/v1
+    description: Local development
+
+tags:
+  - name: Auth
+    description: Аутентификация и регистрация
+  - name: Surveys
+    description: Управление опросами (автор)
+  - name: Questions
+    description: Управление вопросами
+  - name: Options
+    description: Управление вариантами ответов
+  - name: Public
+    description: Публичные эндпоинты для респондентов
+  - name: Results
+    description: Статистика и аналитика
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT токен, полученный при входе
+
+  schemas:
+    # ----- Пользователи -----
+    User:
+      type: object
+      properties:
+        userID:
+          type: integer
+          description: Уникальный идентификатор пользователя
+        name:
+          type: string
+          description: Имя пользователя
+        email:
+          type: string
+          format: email
+          description: Электронная почта
+        createdAt:
+          type: string
+          format: date-time
+          description: Дата регистрации
+        isAdmin:
+          type: boolean
+          description: Флаг администратора
+      required:
+        - userID
+        - name
+        - email
+
+    RegisterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Имя пользователя
+          example: "Иван Петров"
+        email:
+          type: string
+          format: email
+          description: Электронная почта
+          example: "ivan@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 6
+          description: Пароль (минимум 6 символов)
+          example: "secure123"
+        passwordConfirm:
+          type: string
+          format: password
+          description: Подтверждение пароля
+      required:
+        - name
+        - email
+        - password
+        - passwordConfirm
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: "ivan@example.com"
+        password:
+          type: string
+          format: password
+          example: "secure123"
+      required:
+        - email
+        - password
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT токен для авторизации
+        user:
+          $ref: '#/components/schemas/User'
+
+    # ----- Опросы -----
+    Survey:
+      type: object
+      properties:
+        surveyID:
+          type: integer
+          description: Идентификатор опроса
+        userID:
+          type: integer
+          description: ID создателя
+        title:
+          type: string
+          description: Название опроса
+          maxLength: 255
+        description:
+          type: string
+          description: Описание опроса
+          nullable: true
+        status:
+          type: string
+          enum: [draft, published, closed]
+          description: Статус опроса
+          default: draft
+        publishedAt:
+          type: string
+          format: date-time
+          description: Дата публикации
+          nullable: true
+        openedAt:
+          type: string
+          format: date-time
+          description: Начало периода доступа
+          nullable: true
+        closedAt:
+          type: string
+          format: date-time
+          description: Конец периода доступа
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Дата создания
+        responsesCount:
+          type: integer
+          description: Количество ответов (только для результатов)
+      required:
+        - surveyID
+        - userID
+        - title
+        - status
+
+    CreateSurveyRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+          example: "Опрос о качестве обслуживания"
+        description:
+          type: string
+          nullable: true
+          example: "Пожалуйста, оцените наше обслуживание"
+      required:
+        - title
+
+    UpdateSurveyRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [draft, published, closed]
+        openedAt:
+          type: string
+          format: date-time
+          nullable: true
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    PublishResponse:
+      type: object
+      properties:
+        surveyID:
+          type: integer
+        status:
+          type: string
+          enum: [published]
+        publicUrl:
+          type: string
+          description: Публичная ссылка для респондентов
+          example: "https://surveystack.com/s/abc123xyz"
+
+    # ----- Вопросы -----
+    Question:
+      type: object
+      properties:
+        questionID:
+          type: integer
+        surveyID:
+          type: integer
+        content:
+          type: string
+          description: Текст вопроса
+        type:
+          type: string
+          enum: [single, multiple, text]
+          description: "single - один из списка, multiple - несколько из списка, text - текстовый ответ"
+        isRequired:
+          type: boolean
+          default: true
+        orderPriority:
+          type: integer
+          description: Порядковый номер в опросе
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/Option'
+          description: Список вариантов (только для single/multiple)
+      required:
+        - questionID
+        - surveyID
+        - content
+        - type
+        - orderPriority
+
+    CreateQuestionRequest:
+      type: object
+      properties:
+        content:
+          type: string
+          example: "Как вы оцениваете наш сервис?"
+        type:
+          type: string
+          enum: [single, multiple, text]
+        isRequired:
+          type: boolean
+          default: true
+        orderPriority:
+          type: integer
+          description: Порядковый номер (если не указан, добавляется в конец)
+        options:
+          type: array
+          description: Варианты ответов (обязательно для single/multiple, минимум 2)
+          items:
+            type: object
+            properties:
+              text:
+                type: string
+              orderPriority:
+                type: integer
+      required:
+        - content
+        - type
+
+    UpdateQuestionRequest:
+      type: object
+      properties:
+        content:
+          type: string
+        isRequired:
+          type: boolean
+        orderPriority:
+          type: integer
+
+    ReorderQuestionsRequest:
+      type: object
+      properties:
+        orders:
+          type: array
+          description: Массив пар {questionID, orderPriority}
+          items:
+            type: object
+            properties:
+              questionID:
+                type: integer
+              orderPriority:
+                type: integer
+      required:
+        - orders
+
+    # ----- Варианты ответов -----
+    Option:
+      type: object
+      properties:
+        optionID:
+          type: integer
+        questionID:
+          type: integer
+        text:
+          type: string
+        orderPriority:
+          type: integer
+      required:
+        - optionID
+        - questionID
+        - text
+        - orderPriority
+
+    CreateOptionRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          example: "Отлично"
+        orderPriority:
+          type: integer
+          description: Порядковый номер (если не указан, добавляется в конец)
+      required:
+        - text
+
+    UpdateOptionRequest:
+      type: object
+      properties:
+        text:
+          type: string
+        orderPriority:
+          type: integer
+
+    # ----- Публичные (респонденты) -----
+    PublicSurvey:
+      type: object
+      properties:
+        surveyID:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicQuestion'
+
+    PublicQuestion:
+      type: object
+      properties:
+        questionID:
+          type: integer
+        content:
+          type: string
+        type:
+          type: string
+          enum: [single, multiple, text]
+        isRequired:
+          type: boolean
+        orderPriority:
+          type: integer
+        options:
+          type: array
+          items:
+            type: object
+            properties:
+              optionID:
+                type: integer
+              text:
+                type: string
+              orderPriority:
+                type: integer
+
+    SubmitAnswersRequest:
+      type: object
+      properties:
+        sessionID:
+          type: string
+          format: uuid
+          description: UUID сессии (генерируется на клиенте)
+        answers:
+          type: array
+          description: Массив ответов на вопросы
+          items:
+            type: object
+            properties:
+              questionID:
+                type: integer
+              optionIDs:
+                type: array
+                items:
+                  type: integer
+                description: Для типа multiple — массив ID выбранных вариантов
+              optionID:
+                type: integer
+                description: Для типа single — ID выбранного варианта
+              textAnswer:
+                type: string
+                description: Для типа text — текст ответа
+      required:
+        - sessionID
+        - answers
+
+    SubmitResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Спасибо! Ваш ответ сохранён."
+
+    # ----- Результаты и статистика -----
+    SurveyResults:
+      type: object
+      properties:
+        surveyID:
+          type: integer
+        title:
+          type: string
+        totalResponses:
+          type: integer
+          description: Общее количество респондентов
+        questionsStats:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionStats'
+
+    QuestionStats:
+      type: object
+      properties:
+        questionID:
+          type: integer
+        content:
+          type: string
+        type:
+          type: string
+        totalAnswers:
+          type: integer
+          description: Количество ответов на этот вопрос
+        stats:
+          oneOf:
+            - $ref: '#/components/schemas/SingleChoiceStats'
+            - $ref: '#/components/schemas/MultipleChoiceStats'
+            - $ref: '#/components/schemas/TextStats'
+
+    SingleChoiceStats:
+      type: object
+      properties:
+        options:
+          type: array
+          items:
+            type: object
+            properties:
+              optionID:
+                type: integer
+              text:
+                type: string
+              count:
+                type: integer
+              percentage:
+                type: number
+                format: float
+
+    MultipleChoiceStats:
+      type: object
+      properties:
+        options:
+          type: array
+          items:
+            type: object
+            properties:
+              optionID:
+                type: integer
+              text:
+                type: string
+              count:
+                type: integer
+              percentage:
+                type: number
+                format: float
+        totalSelections:
+          type: integer
+          description: Общее количество выборов (сумма count)
+
+    TextStats:
+      type: object
+      properties:
+        answers:
+          type: array
+          items:
+            type: string
+          description: Список текстовых ответов
+        count:
+          type: integer
+
+    # ----- Ошибки -----
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: string
+
+  parameters:
+    surveyIDParam:
+      name: surveyID
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: ID опроса
+    questionIDParam:
+      name: questionID
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: ID вопроса
+    optionIDParam:
+      name: optionID
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: ID варианта ответа
+    slugParam:
+      name: slug
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Публичный идентификатор опроса
+
+security:
+  - BearerAuth: []
+
+paths:
+  # ==================== AUTH ====================
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Регистрация нового пользователя
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Успешная регистрация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Ошибка валидации или email уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Вход в систему
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Успешный вход
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Неверный email или пароль
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Выход из системы
+      operationId: logout
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Успешный выход
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Logged out successfully"
+
+  # ==================== SURVEYS ====================
+  /surveys:
+    get:
+      tags: [Surveys]
+      summary: Получить список всех опросов текущего пользователя
+      operationId: getMySurveys
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, published, closed]
+      responses:
+        '200':
+          description: Список опросов
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  surveys:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Survey'
+                  total:
+                    type: integer
+        '401':
+          description: Не авторизован
+
+    post:
+      tags: [Surveys]
+      summary: Создать новый опрос
+      operationId: createSurvey
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSurveyRequest'
+      responses:
+        '201':
+          description: Опрос создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Survey'
+        '400':
+          description: Ошибка валидации
+
+  /surveys/{surveyID}:
+    get:
+      tags: [Surveys]
+      summary: Получить опрос по ID (с вопросами)
+      operationId: getSurvey
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/surveyIDParam'
+      responses:
+        '200':
+          description: Данные опроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Survey'
+        '403':
+          description: Нет доступа (не владелец)
+        '404':
+          description: Опрос не найден
+
+    put:
+      tags: [Surveys]
+      summary: Обновить опрос (только черновик)
+      operationId: updateSurvey
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/surveyIDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSurveyRequest'
+      responses:
+        '200':
+          description: Опрос обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Survey'
+        '403':
+          description: Нет доступа или опрос уже опубликован
+        '404':
+          description: Опрос не найден
+
+    delete:
+      tags: [Surveys]
+      summary: Удалить опрос (каскадно)
+      operationId: deleteSurvey
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/surveyIDParam'
+      responses:
+        '204':
+          description: Опрос удалён
+        '403':
+          description: Нет доступа
+        '404':
+          description: Опрос не найден
+
+  /surveys/{surveyID}/publish:
+    post:
+      tags: [Surveys]
+      summary: Опубликовать опрос (генерирует slug)
+      operationId: publishSurvey
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/surveyIDParam'
+      responses:
+        '200':
+          description: Опрос опубликован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishResponse'
+        '400':
+          description: Нет вопросов в опросе
+        '403':
+          description: Нет доступа
+
+  /surveys/{surveyID}/reorder:
+    patch:
+      tags: [Surveys]
+      summary: Изменить порядок вопросов
+      operationId: reorderQuestions
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/surveyIDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderQuestionsRequest'
+      responses:
+        '200':
+          description: Порядок обновлён
+        '400':
+          description: Некорректные данные
+        '403':
+          description: Нет доступа
+
+  # ==================== QUESTIONS ====================
+  /surveys/{surveyID}/questions:
+    post:
+      tags: [Questions]
+      summary: Добавить вопрос в опрос
+      operationId: createQuestion
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/surveyIDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateQuestionRequest'
+      responses:
+        '201':
+          description: Вопрос создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+        '403':
+          description: Нет доступа или опрос опубликован
+
+  /questions/{questionID}:
+    get:
+      tags: [Questions]
+      summary: Получить вопрос по ID
+      operationId: getQuestion
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/questionIDParam'
+      responses:
+        '200':
+          description: Данные вопроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+        '404':
+          description: Вопрос не найден
+
+    put:
+      tags: [Questions]
+      summary: Обновить вопрос
+      operationId: updateQuestion
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/questionIDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateQuestionRequest'
+      responses:
+        '200':
+          description: Вопрос обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+        '403':
+          description: Нет доступа
+
+    delete:
+      tags: [Questions]
+      summary: Удалить вопрос (каскадно)
+      operationId: deleteQuestion
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/questionIDParam'
+      responses:
+        '204':
+          description: Вопрос удалён
+        '403':
+          description: Нет доступа
+
+  # ==================== OPTIONS ====================
+  /questions/{questionID}/options:
+    post:
+      tags: [Options]
+      summary: Добавить вариант ответа
+      operationId: createOption
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/questionIDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOptionRequest'
+      responses:
+        '201':
+          description: Вариант создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Option'
+
+  /options/{optionID}:
+    put:
+      tags: [Options]
+      summary: Обновить вариант ответа
+      operationId: updateOption
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/optionIDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOptionRequest'
+      responses:
+        '200':
+          description: Вариант обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Option'
+
+    delete:
+      tags: [Options]
+      summary: Удалить вариант ответа
+      operationId: deleteOption
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/optionIDParam'
+      responses:
+        '204':
+          description: Вариант удалён
+
+  # ==================== PUBLIC ====================
+  /public/surveys/{slug}:
+    get:
+      tags: [Public]
+      summary: Получить опрос для прохождения (без авторизации)
+      operationId: getPublicSurvey
+      parameters:
+        - $ref: '#/components/parameters/slugParam'
+      responses:
+        '200':
+          description: Данные опроса для респондента
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicSurvey'
+        '404':
+          description: Опрос не найден или не опубликован
+
+  /public/responses:
+    post:
+      tags: [Public]
+      summary: Отправить ответы респондента
+      operationId: submitAnswers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitAnswersRequest'
+      responses:
+        '201':
+          description: Ответы сохранены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitResponse'
+        '400':
+          description: Ошибка валидации (обязательные вопросы, неверные типы)
+        '409':
+          description: Эта сессия уже проходила этот опрос
+
+  # ==================== RESULTS ====================
+  /surveys/{surveyID}/results:
+    get:
+      tags: [Results]
+      summary: Получить статистику по опросу
+      operationId: getSurveyResults
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/surveyIDParam'
+      responses:
+        '200':
+          description: Статистика ответов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveyResults'
+        '403':
+          description: Нет доступа
+        '404':
+          description: Опрос не найден
+
+  /surveys/{surveyID}/export/csv:
+    get:
+      tags: [Results]
+      summary: Экспорт результатов в CSV
+      operationId: exportResultsCSV
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/surveyIDParam'
+      responses:
+        '200':
+          description: CSV файл с результатами
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        '403':
+          description: Нет доступа
+        '404':
+          description: Опрос не найден
